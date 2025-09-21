@@ -1,20 +1,21 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  UploadedFile,
-  UseInterceptors,
-  ParseArrayPipe, HttpException,
+    Controller,
+    Get,
+    Post,
+    Body,
+    Patch,
+    Param,
+    Delete,
+    UploadedFile,
+    UseInterceptors,
+    ParseArrayPipe, HttpException, Res, StreamableFile, Query,
 } from '@nestjs/common';
 import { ImagesService } from './images.service';
 import { CreateImageDto } from './dto/create-image.dto';
 import { UpdateImageDto } from './dto/update-image.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Public } from 'src/decorators/public.decorator';
+import { Response } from 'express';
 
 @Controller('images')
 export class ImagesController {
@@ -37,6 +38,15 @@ export class ImagesController {
   findAll() {
     return this.imagesService.findAll();
   }
+    @Public()
+    @Get('webp')
+    async webp(@Query('link') link: string, @Query('size') size: string) {
+        const buffer = await this.imagesService.webp(link,parseInt(size));
+        return new StreamableFile(buffer, {
+            type: 'image/webp',
+        });
+    }
+
 
   @Get(':id')
   findOne(@Param('id') id: string) {

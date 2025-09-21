@@ -24,7 +24,7 @@ export class SectionsImagesController {
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateSectionsImageDto: UpdateSectionsImageDto) {
-    return this.sectionsImagesService.update(+id, updateSectionsImageDto);
+    //return this.sectionsImagesService.update(+id, updateSectionsImageDto);
   }
 
   @Delete(':id')

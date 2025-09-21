@@ -1,1 +1,3 @@
-export class CreateSectionDto {}
+export class CreateSectionDto {
+    title: string;
+}

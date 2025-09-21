@@ -8,9 +8,14 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { SectionsImagesModule } from './sections-images/sections-images.module';
 import { SectionsModule } from './sections/sections.module';
+import { ServeStaticModule } from "@nestjs/serve-static";
+import {join} from "node:path";
 
 @Module({
-  imports: [ConfigModule.forRoot(), PrismaModule, ImagesModule, AuthModule, UsersModule, SectionsImagesModule, SectionsModule],
+  imports: [ConfigModule.forRoot(), PrismaModule, ImagesModule, AuthModule, UsersModule, SectionsImagesModule,
+      SectionsModule
+
+],
   controllers: [AppController],
   providers: [AppService],
 })

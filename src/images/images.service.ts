@@ -51,6 +51,20 @@ export class ImagesService {
   findAll() {
     return this.prisma.image.findMany();
   }
+  async webp(link: string, size?: number) {
+
+      const filePath = join(__dirname, '..', '..', link.split('?')[0]);
+
+    if (!fs.existsSync(filePath)) {
+        throw new Error('File not found' + ' '+ filePath);
+    }
+    if (!size) {
+        return sharp(filePath).toBuffer();
+    }
+
+    return sharp(filePath).resize({ width: size, height: undefined, fit: 'inside' }).toBuffer();
+  }
+
 
   findOne(id: number) {
     return this.prisma.image.findUnique({ where: { id } });
