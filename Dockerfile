@@ -14,7 +14,6 @@ RUN npm run build
 FROM node:20-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
-RUN addgroup -S nodegrp && adduser -S node -G nodegrp
 # copier uniquement le minimum vital
 COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
