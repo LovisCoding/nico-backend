@@ -10,4 +10,4 @@ services:
       - NODE_ENV=production
       - PORT=3001         # assure-toi que ton app écoute bien dessus (0.0.0.0:3001)
     expose:
-      - "3001"  g
+      - "3001"
