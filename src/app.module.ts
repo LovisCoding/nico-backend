@@ -12,7 +12,10 @@ import { ServeStaticModule } from "@nestjs/serve-static";
 import {join} from "node:path";
 
 @Module({
-  imports: [ConfigModule.forRoot(), PrismaModule, ImagesModule, AuthModule, UsersModule, SectionsImagesModule,
+  imports: [ConfigModule.forRoot({
+    isGlobal: true,
+    envFilePath: [`.env.${process.env.NODE_ENV || 'development'}.local`, '.env.local','.env'],
+  }), PrismaModule, ImagesModule, AuthModule, UsersModule, SectionsImagesModule,
       SectionsModule
 
 ],
