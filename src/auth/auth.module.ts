@@ -16,7 +16,10 @@ import { APP_GUARD } from '@nestjs/core';
       provide: APP_GUARD,
       useClass: AuthGuard,
     }],
-  imports: [UsersModule, PrismaModule, ConfigModule.forRoot(),
+  imports: [UsersModule, PrismaModule, ConfigModule.forRoot({
+    isGlobal: true,
+    envFilePath: [`.env.${process.env.NODE_ENV || 'development'}.local`, '.env.local','.env'],
+  }),
     JwtModule.register({
         global: true,
         secret:jwtConstants.secret,

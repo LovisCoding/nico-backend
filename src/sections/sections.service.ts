@@ -28,6 +28,7 @@ export class SectionsService {
             include: {
                 images: {
                     orderBy: {order: 'asc'},
+                  include : { image: true }
                 }
             }
         });
