@@ -52,41 +52,65 @@ export class SectionsImagesService {
   }
 
   async update(updateSectionsImageDto: UpdateSectionsImageDto) {
-      //Get sectionsImages between
-       const betweenSectionImages = await this.prisma.sectionImages.findMany({
-          where: {
-                sectionId :  updateSectionsImageDto.idSection ,
-                imageId : { in: updateSectionsImageDto.betweenSectionImages }
-          }
-        });
-      let betweenSectionImagesOrdered = 0;
-      if (betweenSectionImages.length === 1) {
-          if (updateSectionsImageDto.betweenSectionImages[0] === -1) {
-              betweenSectionImagesOrdered = betweenSectionImages[0].order /2;
-          } else {
-                betweenSectionImagesOrdered = betweenSectionImages[0].order + 1000;
-          }
-      }
-      else if (betweenSectionImages.length === 2) {
-            betweenSectionImagesOrdered = (betweenSectionImages[0].order + betweenSectionImages[1].order) / 2;
-      }
-      else {
-          throw new HttpException("Pas assez d'image pour trier ", 400);
-      }
+    // Récupère les deux enregistrements à échanger
+    const changeWith = await this.prisma.sectionImages.findFirst({
+      where: {
+        sectionId: updateSectionsImageDto.idSection,
+        imageId: updateSectionsImageDto.changeWith,
+      },
+    });
 
-      return this.prisma.sectionImages.update({
-          where: {
-              sectionId_imageId: {
-                  sectionId: updateSectionsImageDto.idSection, imageId: updateSectionsImageDto.idImageToChangeOrder
-              }
+    const imageToChange = await this.prisma.sectionImages.findFirst({
+      where: {
+        sectionId: updateSectionsImageDto.idSection,
+        imageId: updateSectionsImageDto.idImageToChangeOrder,
+      },
+    });
+
+    if (!changeWith || !imageToChange) {
+      throw new HttpException('Images not found in section', 400);
+    }
+
+    // Sauvegarde des ordres actuels puis échange via une transaction
+    const orderA = changeWith.order;
+    const orderB = imageToChange.order;
+
+    await this.prisma.sectionImages.update({
+      where: {
+        sectionId_imageId: {
+          sectionId: updateSectionsImageDto.idSection,
+          imageId: changeWith.imageId,
+        },
+      },
+      data: { order: 0 },
+    });
+    const ops = [
+
+      this.prisma.sectionImages.update({
+        where: {
+          sectionId_imageId: {
+            sectionId: updateSectionsImageDto.idSection,
+            imageId: imageToChange.imageId,
           },
-          data: {
-              order: betweenSectionImagesOrdered
-          }
-      });
+        },
+        data: { order: orderA },
+      }),
 
+      this.prisma.sectionImages.update({
+        where: {
+          sectionId_imageId: {
+            sectionId: updateSectionsImageDto.idSection,
+            imageId: changeWith.imageId,
+          },
+        },
+        data: { order: orderB },
+      }),
 
+    ];
+
+    return await this.prisma.$transaction(ops);
   }
+
 
   remove(id: number) {
     return `This action removes a #${id} sectionsImage`;
