@@ -6,7 +6,7 @@ import { DeleteImagesSections } from './dto/delete-images-sections.dto';
 
 @Injectable()
 export class SectionsImagesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
   async create(createSectionsImageDto: CreateSectionsImageDto) {
     const newBaseOrder = await this.orderById(createSectionsImageDto.sectionId);
     const dtoAny = createSectionsImageDto as any;
@@ -37,22 +37,61 @@ export class SectionsImagesService {
   }
   findAll() {
     return this.prisma.sectionImages.findMany({
-      orderBy : { order: 'asc'},
-      include: { image: true  }
-      }
+      orderBy: { order: 'asc' },
+      include: { image: true }
+    }
     );
   }
 
   findOne(id: number) {
     return this.prisma.sectionImages.findMany({
-      where : { sectionId: id},
-      orderBy : { order: 'asc'},
-      include: { image: true  }
+      where: { sectionId: id },
+      orderBy: { order: 'asc' },
+      include: { image: true }
     })
   }
 
   async update(updateSectionsImageDto: UpdateSectionsImageDto) {
-    // Récupère les deux enregistrements à échanger
+    // Cas 1: Reordering complet (Drag & Drop)
+    if (updateSectionsImageDto.orderedImageIds && updateSectionsImageDto.orderedImageIds.length > 0) {
+      // Étape 1 : Passer par des valeurs négatives temporaires pour éviter les collisions de contrainte UNIQUE
+      const tempOps = updateSectionsImageDto.orderedImageIds.map((imageId, index) => {
+        return this.prisma.sectionImages.update({
+          where: {
+            sectionId_imageId: {
+              sectionId: updateSectionsImageDto.idSection,
+              imageId: imageId,
+            },
+          },
+          data: {
+            // On utilise des valeurs négatives uniques pour être sûr de ne pas conflire avec les existants
+            order: -1 * (index + 1),
+          },
+        });
+      });
+
+      // On exécute la première passe
+      await this.prisma.$transaction(tempOps);
+
+      // Étape 2 : Mettre les vraies valeurs finales
+      const finalOps = updateSectionsImageDto.orderedImageIds.map((imageId, index) => {
+        return this.prisma.sectionImages.update({
+          where: {
+            sectionId_imageId: {
+              sectionId: updateSectionsImageDto.idSection,
+              imageId: imageId,
+            },
+          },
+          data: {
+            order: (index + 1) * 1000,
+          },
+        });
+      });
+
+      return await this.prisma.$transaction(finalOps);
+    }
+
+    // Cas 2: Swap (Legacy / Button click)
     const changeWith = await this.prisma.sectionImages.findFirst({
       where: {
         sectionId: updateSectionsImageDto.idSection,
@@ -115,23 +154,23 @@ export class SectionsImagesService {
   remove(id: number) {
     return `This action removes a #${id} sectionsImage`;
   }
-   async orderById(id: number) {
-       const sectionImages = await this.prisma.sectionImages.findFirst({
-         where: { sectionId: id },
-         orderBy: { order: 'desc' }
-       })
-       return sectionImages ? sectionImages.order + 1000 : 1000 ;
+  async orderById(id: number) {
+    const sectionImages = await this.prisma.sectionImages.findFirst({
+      where: { sectionId: id },
+      orderBy: { order: 'desc' }
+    })
+    return sectionImages ? sectionImages.order + 1000 : 1000;
   }
-  removeImageFromSection(deleteImageSections : DeleteImagesSections) {
-       return this.prisma.sectionImages.delete({
-          where: {
-              sectionId_imageId: {
-                  sectionId: deleteImageSections.sectionId,
-                  imageId: deleteImageSections.imageId,
-              }
-          }
-      }).catch(err => {
-          throw new HttpException("Image / Section Not found", 400);
-       });
+  removeImageFromSection(deleteImageSections: DeleteImagesSections) {
+    return this.prisma.sectionImages.delete({
+      where: {
+        sectionId_imageId: {
+          sectionId: deleteImageSections.sectionId,
+          imageId: deleteImageSections.imageId,
+        }
+      }
+    }).catch(err => {
+      throw new HttpException("Image / Section Not found", 400);
+    });
   }
 }

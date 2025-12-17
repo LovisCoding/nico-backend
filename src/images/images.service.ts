@@ -15,7 +15,7 @@ export class ImagesService {
   async uploadImage(file: Express.Multer.File) {
     const outputDir = join(__dirname, '..', '..', 'uploads');
 
-    const filename= file.originalname.split('.').slice(0, -1).join('.');
+    const filename = file.originalname.split('.').slice(0, -1).join('.');
     const outputFilename = `${Date.now()}-${filename}.webp`;
     const outputPath = join(outputDir, outputFilename);
 
@@ -27,15 +27,15 @@ export class ImagesService {
   }
   async create(createImageDto: CreateImageDto) {
     const dbRequest =
-      {
-        data: {
-          title: createImageDto.title,
-          url: createImageDto.url,
-          sections: {
-            create: [] as { section: { connect: { id: number } }, order: number }[]
-          },
-        }
-      };
+    {
+      data: {
+        title: createImageDto.title,
+        url: createImageDto.url,
+        sections: {
+          create: [] as { section: { connect: { id: number } }, order: number }[]
+        },
+      }
+    };
     for (const sectionId of createImageDto.sections || []) {
       dbRequest.data.sections.create.push({
         section: {
@@ -53,13 +53,13 @@ export class ImagesService {
   }
   async webp(link: string, size?: number) {
 
-      const filePath = join(__dirname, '..', '..', link.split('?')[0]);
+    const filePath = join(__dirname, '..', '..', link.split('?')[0]);
 
     if (!fs.existsSync(filePath)) {
-        throw new Error('File not found' + ' '+ filePath);
+      throw new Error('File not found' + ' ' + filePath);
     }
     if (!size) {
-        return sharp(filePath).toBuffer();
+      return sharp(filePath).toBuffer();
     }
 
     return sharp(filePath).resize({ width: size, height: undefined, fit: 'inside' }).toBuffer();
@@ -75,15 +75,20 @@ export class ImagesService {
   }
 
   async remove(id: number) {
+    // Supprimer d'abord les liaisons images-sections
+    await this.prisma.sectionImages.deleteMany({
+      where: { imageId: id }
+    });
+
     return this.prisma.image.delete({ where: { id } }).then((image) => {
-        fs.unlink(join(__dirname, '..', '..', image.url), (err) => {
-          if (err) {
-            console.error('Error deleting file:', err);
-          } else {
-            console.log('File deleted successfully');
-          }
+      fs.unlink(join(__dirname, '..', '..', image.url), (err) => {
+        if (err) {
+          console.error('Error deleting file:', err);
+        } else {
+          console.log('File deleted successfully');
         }
-        );
+      }
+      );
 
     })
   }
