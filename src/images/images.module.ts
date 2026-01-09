@@ -13,7 +13,10 @@ import { SectionsImagesModule } from '../sections-images/sections-images.module'
     SectionsImagesModule,
     MulterModule.register({
       storage: multer.memoryStorage(),
-      }),
+      limits: {
+        fileSize: 50 * 1024 * 1024, // 50 MB
+      },
+    }),
   ]
 })
-export class ImagesModule {}
+export class ImagesModule { }
