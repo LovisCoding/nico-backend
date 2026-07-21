@@ -20,7 +20,8 @@ export class ImagesService {
     const outputPath = join(outputDir, outputFilename);
 
     await sharp(file.buffer)
-      .webp({ quality: 60 })
+      .resize(1920, 1080, { fit: 'inside', withoutEnlargement: true })
+      .webp({ quality: 80 })
       .toFile(outputPath);
     return '/uploads/' + outputFilename;
 

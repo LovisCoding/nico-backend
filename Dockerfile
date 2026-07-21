@@ -1,39 +1,58 @@
-# --- build ---
+# Étape 1 : Build de l'application NestJS & Prisma
 FROM node:20-alpine AS build
+
 WORKDIR /app
+
 RUN apk add --no-cache openssl
 
-# 1️⃣ Installer les dépendances
+# Copie des définitions de dépendances et du schéma Prisma
 COPY package*.json ./
-RUN npm ci
-
-# 2️⃣ Copier le code source et le schéma Prisma
-COPY . .
 COPY prisma ./prisma
 
-# 3️⃣ Générer le client Prisma
+RUN npm ci
+
+# Copie du code source complet
+COPY . .
+
+# Génération du client Prisma
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
-# 4️⃣ Builder ton app NestJS
+# Build du projet NestJS
 RUN npm run build
 
-# --- production ---
-FROM node:20-alpine AS runtime
-ENV NODE_ENV=production
+# Étape 2 : Image de Production
+FROM node:20-alpine AS production
+
 WORKDIR /app
+ENV NODE_ENV=production
 
-# 5️⃣ Installer les dépendances prod
+RUN apk add --no-cache openssl
+
+# Copie des définitions et du schéma Prisma
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+COPY prisma ./prisma
 
-COPY --from=build /app/prisma ./prisma
-RUN npx prisma generate --schema=./prisma/schema.prisma
-# 6️⃣ Copier les fichiers nécessaires
+# Installation des dépendances prod en ignorant les scripts postinstall automatiques
+RUN npm ci --omit=dev --ignore-scripts && npm cache clean --force
+
+# Copie des artefacts du build (code compilé, images initiales et client Prisma)
 COPY --from=build /app/dist ./dist
-COPY --from=build /app/prisma ./prisma
-COPY --from=build /app/node_modules/.bin/prisma /usr/local/bin/prisma
+COPY --from=build /app/uploads ./uploads
+COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
 
-# 7️⃣ Lancer Prisma + ton app
+# Générer les fichiers d'exécutable client Prisma si nécessaire
+RUN npx prisma generate --schema=./prisma/schema.prisma
+
+# Assurer les permissions pour l'utilisateur node sur /app/uploads
+RUN chown -R node:node /app/uploads
+
+
 USER node
+
 EXPOSE 3001
-CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/main.js"]
+
+# Lancement des migrations Prisma, du script de données initiales (queries.js) et démarrage du serveur NestJS
+CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/queries.js && node dist/main.js"]
+
+
