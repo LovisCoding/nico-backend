@@ -1,0 +1,13 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: nico-back:latest
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3001         # assure-toi que ton app écoute bien dessus (0.0.0.0:3001)
+    expose:
+      - "3001"

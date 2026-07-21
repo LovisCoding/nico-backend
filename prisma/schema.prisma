@@ -6,7 +6,7 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -15,28 +15,33 @@ datasource db {
 }
 
 model Image {
-  id        Int     @id @default(autoincrement())
+  id        Int             @id @default(autoincrement())
   url       String
-  alt       String?
-  createdAt DateTime @default(now())
-
-  sections SectionImage[]
+  title     String?
+  createdAt DateTime        @default(now())
+  sections  SectionImages[]
 }
 
-model Section {
-  id      Int     @id @default(autoincrement())
-  title   String
-  images  SectionImage[]
+model Sections {
+  id     Int             @id @default(autoincrement())
+  title  String
+  images SectionImages[]
 }
 
-model SectionImage {
-  section   Section @relation(fields: [sectionId], references: [id])
+model SectionImages {
+  section   Sections @relation(fields: [sectionId], references: [id])
   sectionId Int
-  image     Image   @relation(fields: [imageId], references: [id])
+  image     Image    @relation(fields: [imageId], references: [id])
   imageId   Int
-
-  order     Int     // ordre d’affichage, tri ASC
+  order     Float    @default(1000) // ordre d’affichage, tri ASC
 
   @@id([sectionId, imageId])
   @@unique([sectionId, order]) // optionnel : garantit unicité de l’ordre par section
+}
+
+model Users {
+  id        Int      @id @unique @default(autoincrement())
+  name      String   @unique
+  password  String
+  createdAt DateTime @default(now())
 }
